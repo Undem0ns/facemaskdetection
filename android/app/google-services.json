@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "918541911422",
+    "firebase_url": "https://facemaskml-8c848.firebaseio.com",
+    "project_id": "facemaskml-8c848",
+    "storage_bucket": "facemaskml-8c848.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:918541911422:android:a20102b6de68089d16df2f",
+        "android_client_info": {
+          "package_name": "com.example.facemaskdetection"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "918541911422-cs36dcffguls8gr7c5mgfcpn3q48vmh5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9AnmcScUQC6Dbuf_EpgLn1tKVc5TjwJ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "918541911422-cs36dcffguls8gr7c5mgfcpn3q48vmh5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
