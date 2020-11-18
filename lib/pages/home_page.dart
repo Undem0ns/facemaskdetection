@@ -66,7 +66,7 @@ class _HomeState extends State<Home> {
               child: RaisedButton(
                 onPressed: () => Navigator.push(context,
                     MaterialPageRoute(builder: (context) => PredictImage())),
-                //pickImage
+                //pickImage update1
                 child: Text(
                   'Detect On Image',
                   style: TextStyle(
