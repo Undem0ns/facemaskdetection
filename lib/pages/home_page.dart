@@ -1,46 +1,28 @@
 import 'package:facemaskdetection/pages/predict_image_page.dart';
+import 'package:facemaskdetection/pages/predict_on_video.dart';
+import 'package:facemaskdetection/service/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
 }
 
-Widget _drawer() {
-  return Drawer(
-    child: ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        DrawerHeader(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(
-                'assets/image/upload.png',
-              ),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: Text(''),
-          padding: EdgeInsets.all(8),
-        ),
-        ListTile(
-          leading: Icon(Icons.message),
-          title: Text('Messages'),
-        ),
-        ListTile(
-          leading: Icon(Icons.account_circle),
-          title: Text('Profile'),
-        ),
-        ListTile(
-          leading: Icon(Icons.settings),
-          title: Text('Settings'),
-        ),
-      ],
-    ),
-  );
-}
-
 class _HomeState extends State<Home> {
+  CameraLensDirection _direction = CameraLensDirection.front;
+  @override
+  void initState() {
+    super.initState();
+    _initCamera();
+  }
+
+  _initCamera() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    cameras = await availableCameras();
+    CameraDescription description = await getCamera(_direction);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -81,9 +63,10 @@ class _HomeState extends State<Home> {
               width: 300,
               margin: EdgeInsets.fromLTRB(30, 470, 30, 0),
               child: RaisedButton(
-                onPressed: () {},
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => PredictVideo())),
                 child: Text(
-                  'Upload Video',
+                  'Detect On Video',
                   style: TextStyle(
                     fontSize: 24,
                     fontStyle: FontStyle.italic,
@@ -131,7 +114,7 @@ class _HomeState extends State<Home> {
             ),
           ],
         ),
-        drawer: _drawer(),
+        //drawer: _drawer(),
       ),
     );
   }

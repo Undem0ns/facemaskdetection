@@ -60,32 +60,10 @@ class _PredictImageState extends State<PredictImage> {
       print(y);
       print(w); //right
       print(h); //botton
-      await faceimage.add(
+      faceimage.add(
           img.copyCrop(rawimage, x.round(), y.round(), w.round(), h.round()));
-      //faceimage.add(img.copyResizeCropSquare(rawimage, 200));
-      //print('Width : ' + faceimage.toString());
-      //print('Heigth : ' + faceimage.first.height.toString());
-      //print('\n');
-
     }
   }
-
-  // Future recognizeImageBinary(File image) async {
-  //   int startTime = new DateTime.now().millisecondsSinceEpoch;
-  //   //var imageBytes = (await rootBundle.load(image.path)).buffer;
-  //   //img.Image oriImage = img.decodeJpg(imageBytes.asUint8List());
-  //   img.Image resizedImage = img.copyResize(oriImage, height: 224, width: 224);
-  //   var recognitions = await Tflite.runModelOnBinary(
-  //     binary: imageToByteListFloat32(resizedImage, 224, 127.5, 127.5),
-  //     numResults: 6,
-  //     threshold: 0.05,
-  //   );
-  //   setState(() {
-  //     _recognitions = recognitions;
-  //   });
-  //   int endTime = new DateTime.now().millisecondsSinceEpoch;
-  //   print("Inference took ${endTime - startTime}ms");
-  // }
 
   _loadImage(File file) async {
     final data = await file.readAsBytes();
