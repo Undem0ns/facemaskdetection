@@ -139,7 +139,7 @@ class _PredictImageState extends State<PredictImage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _getImageAndDetectFaces,
         tooltip: 'Pick Image',
-        child: Icon(Icons.add_a_photo),
+        child: Icon(Icons.image),
       ),
     );
   }
