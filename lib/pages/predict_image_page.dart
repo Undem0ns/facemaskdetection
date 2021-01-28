@@ -48,20 +48,21 @@ class _PredictImageState extends State<PredictImage> {
     print('width ' + rawimage.width.toString());
     print('height ' + rawimage.height.toString());
     for (Rect rectangle in rec) {
-      double x, y, w, h;
-      x = rectangle.left;
-      y = rectangle.top;
-      w = rectangle.width;
-      h = rectangle.height;
+      int x, y, w, h;
+      x = rectangle.left.toInt();
+      y = rectangle.top.toInt();
+      w = rectangle.width.toInt();
+      h = rectangle.height.toInt();
       //print(rawimage.width);
       //print(_image.height);
       //print(rectangle.toString());
       print(x);
       print(y);
-      print(w); //right
-      print(h); //botton
-      faceimage.add(
-          img.copyCrop(rawimage, x.round(), y.round(), w.round(), h.round()));
+      print('width ' + w.toString()); //right
+      print('height ' + h.toString());
+      print(rectangle.bottomRight); //botton
+      print(rectangle.topLeft);
+      // faceimage.add(img.copyCrop(rawimage, 0, 0, 50, 50));
     }
   }
 
@@ -84,34 +85,14 @@ class _PredictImageState extends State<PredictImage> {
           : (_imageFile == null)
               ? Center(child: Text('No image selected'))
               : Center(
-                  child: Column(
-                    children: [
-                      FittedBox(
-                        child: SizedBox(
-                          width: _image.width.toDouble(),
-                          height: _image.height.toDouble(),
-                          child: CustomPaint(
-                            painter: FacePainter(_image, _faces),
-                          ),
-                        ),
+                  child: FittedBox(
+                    child: SizedBox(
+                      width: _image.width.toDouble(),
+                      height: _image.height.toDouble(),
+                      child: CustomPaint(
+                        painter: FacePainter(_image, _faces),
                       ),
-                      FittedBox(
-                        child: SizedBox(
-                          width: _image.width.toDouble(),
-                          height: _image.height.toDouble(),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: FileImage(
-                                  _imageFile,
-                                ),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
       floatingActionButton: FloatingActionButton(

@@ -96,19 +96,16 @@ class _HomeState extends State<Home> {
               ),
             ),
             Container(
-              height: 50,
+              height: 40,
               width: double.infinity,
               margin: EdgeInsets.fromLTRB(0, 70, 0, 0),
-              child: FlatButton(
-                onPressed: () {},
-                color: Colors.white70,
-                child: Text(
-                  'Face Mask Detector',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontStyle: FontStyle.italic,
-                  ),
+              color: Colors.white70,
+              child: Text(
+                'Face Mask Detector',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
             ),

@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:facemaskdetection/pages/home_page.dart';
+import 'package:image_picker/image_picker.dart';
 
 List<CameraDescription> cameras;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   cameras = await availableCameras();
+
   runApp(HomePage());
 }
 
@@ -28,6 +32,7 @@ class _HomePageState extends State<HomePage> {
       theme: ThemeData(
         canvasColor: Color(0xFF61A4F1),
       ),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
