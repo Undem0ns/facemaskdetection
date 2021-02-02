@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart';
 
 class Style {
@@ -27,6 +30,34 @@ class Style {
         ),
       );
 
+  Widget showImage(double width, double height, File file) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: FileImage(file),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+
+  // Widget showImageCrop(double width, double height, File file, Rect rect) {
+  //   // cropImage = img.copyCrop(imgImage, x, y, w, h)
+  //   return Container(
+  //     child: Column(
+  //       children: [],
+  //     ),
+  //     width: width,
+  //     height: height,
+  //     decoration: BoxDecoration(
+  //       image: DecorationImage(
+  //         image: FileImage(file),
+  //         fit: BoxFit.cover,
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget titleH1(String string) => Text(
         string,
         style: TextStyle(
@@ -51,6 +82,30 @@ class Style {
           color: Colors.black,
           fontSize: 16,
           // fontWeight: FontWeight.bold,
+        ),
+      );
+
+  Widget button(Function navigation, String string) => ElevatedButton(
+        onPressed: navigation,
+        child: Style().titleH2(string),
+        style: ElevatedButton.styleFrom(
+          primary: Style().buttonlighColor,
+          elevation: 20,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      );
+
+  Decoration decoration() => BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Style().lighColor,
+            Style().primaryColor,
+            Style().darkColor,
+          ],
         ),
       );
 

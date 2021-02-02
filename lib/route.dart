@@ -1,8 +1,11 @@
-import 'package:facemaskdetection/pages/home_page.dart';
-import 'package:facemaskdetection/widget/mainpage.dart';
+import 'package:camera/camera.dart';
+import 'package:facemaskdetection/main.dart';
+import 'package:facemaskdetection/widget/detect_image.dart';
+import 'package:facemaskdetection/widget/detect_on_camera.dart';
 import 'package:flutter/material.dart';
 
 final Map<String, WidgetBuilder> routes = {
-  '/home': (BuildContext context) => Home(),
-  '/mainpage': (BuildContext context) => MainPage(),
+  '/detectimage': (BuildContext context) => DetectImage(),
+  '/detectoncamera': (BuildContext context) =>
+      DetectOnCamera(MyApp().getCamera()),
 };

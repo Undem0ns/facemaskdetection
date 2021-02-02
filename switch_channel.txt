@@ -1,0 +1,5 @@
+flutter channel dev 
+flutter upgrade
+flutter pub cache repair
+flutter clean
+flutter doctor
