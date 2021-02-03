@@ -1,4 +1,5 @@
 import 'package:camera/camera.dart';
+import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
@@ -22,10 +23,10 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
 
   switchCamera(Iterator cameraIterator) {
     if (!cameraIterator.moveNext()) {
-      cameraIterator = widget.cameras.iterator;
-      cameraIterator.moveNext();
+      cameraDescription = widget.cameras.iterator;
+      cameraDescription.moveNext();
     }
-    initNewCamera(cameraIterator);
+    initNewCamera(cameraDescription);
   }
 
   initNewCamera(Iterator cameraIterator) {
@@ -49,7 +50,7 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
             }).toList(),
             imageHeight: img.height,
             imageWidth: img.width,
-            numResults: 5,
+            numResults: 2,
           ).then((recognitions) {
             setRecognitions(recognitions);
             isDetecting = false;
@@ -71,39 +72,8 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
         isDetecting = false;
       });
     });
-
-    switchCamera(cameraDescription);
-
-    // cameraDescription.moveNext();
-    // controller = CameraController(
-    //   cameraDescription.current,
-    //   ResolutionPreset.medium,
-    // );
-
-    // controller.initialize().then((_) {
-    //   if (!mounted) {
-    //     return;
-    //   }
-    //   setState(() {});
-
-    //   controller.startImageStream((CameraImage img) {
-    //     if (!isDetecting) {
-    //       isDetecting = true;
-
-    //       Tflite.runModelOnFrame(
-    //         bytesList: img.planes.map((plane) {
-    //           return plane.bytes;
-    //         }).toList(),
-    //         imageHeight: img.height,
-    //         imageWidth: img.width,
-    //         numResults: 5,
-    //       ).then((recognitions) {
-    //         setRecognitions(recognitions);
-    //         isDetecting = false;
-    //       });
-    //     }
-    //   });
-    // });
+    cameraDescription.moveNext();
+    initNewCamera(cameraDescription);
   }
 
   Future loadModel() async {
@@ -111,8 +81,6 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
     try {
       String res = await Tflite.loadModel(
           model: "assets/model/model.tflite", labels: "assets/model/model.txt");
-      // model: "assets/model/mobilenet.tflite",
-      // labels: "assets/model/mobilenet.txt");
       print('loadModel result : $res');
     } on PlatformException {
       print('Failed to load model.');
@@ -164,11 +132,6 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
               color: Colors.red,
             ),
           ),
-          // Container(
-          //   child: Column(
-          //     children: result != null ? _renderStrings() : [],
-          //   ),
-          // ),
           Stack(
             children: result != null ? _renderStrings() : [],
           ),
