@@ -6,6 +6,6 @@ import 'package:flutter/material.dart';
 
 final Map<String, WidgetBuilder> routes = {
   '/detectimage': (BuildContext context) => DetectImage(),
-  '/detectoncamera': (BuildContext context) =>
-      DetectOnCamera(MyApp().getCamera()),
+  // '/detectoncamera': (BuildContext context) =>
+  //     DetectOnCamera(MyApp().getCamera()),
 };

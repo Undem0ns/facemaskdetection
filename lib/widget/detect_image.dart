@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:tflite/tflite.dart';
 
 class DetectImage extends StatefulWidget {
   @override
@@ -22,6 +23,7 @@ class _DetectImageState extends State<DetectImage> {
   bool showImage;
   List<Face> faces;
   img.Image image;
+  List<dynamic> result;
 
   @override
   void initState() {
@@ -66,6 +68,11 @@ class _DetectImageState extends State<DetectImage> {
                           screenHeight * 0.5,
                           imageFile,
                         ),
+                        SizedBox(
+                          height: screenHeight * 0.05,
+                        ),
+                        Container(child: Style().titleH1("Face Mask Result")),
+                        buildResult(),
                       ],
                     ),
                   ),
@@ -86,14 +93,57 @@ class _DetectImageState extends State<DetectImage> {
     );
   }
 
+  Column buildResult() {
+    if (result.first["index"] == 0) {
+      return Column(
+        children: [
+          Icon(
+            Icons.do_disturb_on_rounded,
+            size: screenHeight * 0.2,
+            color: Colors.red,
+          ),
+          Text(result.first["index"].toString()),
+          Text(result.first["label"].toString()),
+          Style().titleH1("Not waring mask"),
+        ],
+      );
+    } else if ((result.first["index"] == 1)) {
+      return Column(
+        children: [
+          Icon(
+            Icons.high_quality,
+            size: screenHeight * 0.2,
+            color: Colors.yellow,
+          ),
+          Text(result.first["index"].toString()),
+          Text(result.first["label"].toString()),
+          Style().titleH1("No face detected"),
+        ],
+      );
+    } else {
+      return Column(
+        children: [
+          Icon(
+            Icons.assignment_turned_in_rounded,
+            size: screenHeight * 0.2,
+            color: Colors.greenAccent[400],
+          ),
+          Text(result.first["index"].toString()),
+          Text(result.first["label"].toString()),
+          Style().titleH1("Waring face mask"),
+        ],
+      );
+    }
+  }
+
   SizedBox buildFloatingActionButton() {
     return SizedBox(
-      width: screenWidth * 0.25,
-      height: screenWidth * 0.25,
+      width: screenWidth * 0.15,
+      height: screenWidth * 0.15,
       child: FloatingActionButton(
         child: Icon(
           Icons.image_search,
-          size: screenWidth * 0.15,
+          size: screenWidth * 0.1,
         ),
         onPressed: () async {
           final pickedFile =
@@ -101,23 +151,32 @@ class _DetectImageState extends State<DetectImage> {
           if (pickedFile != null) {
             setState(() {
               imageFile = File(pickedFile.path);
-              isImagePorcessing = true;
-              print(isImagePorcessing);
-            });
-            final firebaseImage =
-                FirebaseVisionImage.fromFilePath(imageFile.path);
-            final faceDetector = FirebaseVision.instance.faceDetector();
-            faces = await faceDetector.processImage(firebaseImage);
-            setState(() {
-              isImagePorcessing = false;
               showImage = true;
+              // isImagePorcessing = true;
               print(isImagePorcessing);
-              print(faces.first);
             });
+            Tflite.runModelOnImage(path: imageFile.path)
+                .then((recognitions) => setRecognitions(recognitions));
+            // final firebaseImage =
+            //     FirebaseVisionImage.fromFilePath(imageFile.path);
+            // final faceDetector = FirebaseVision.instance.faceDetector();
+            // faces = await faceDetector.processImage(firebaseImage);
+            // setState(() {
+            //   isImagePorcessing = false;
+            //   showImage = true;
+            //   print(isImagePorcessing);
+            //   print(faces.first);
+            // });
           }
         },
         backgroundColor: Style().lighColor,
       ),
     );
+  }
+
+  setRecognitions(recognitions) {
+    setState(() {
+      result = recognitions;
+    });
   }
 }

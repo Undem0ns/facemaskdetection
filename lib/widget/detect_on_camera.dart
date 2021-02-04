@@ -1,4 +1,6 @@
 import 'package:camera/camera.dart';
+import 'package:facemaskdetection/service/utils.dart';
+import 'package:facemaskdetection/utility/style.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,8 +20,11 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
   CameraController controller;
   bool isDetecting = false;
   List<dynamic> result;
-  double screen;
+  Size screen;
+  Color svgColor;
   Iterator<CameraDescription> cameraDescription;
+  CameraLensDirection direction = CameraLensDirection.back;
+  List<Face> faces;
 
   switchCamera(Iterator cameraIterator) {
     if (!cameraIterator.moveNext()) {
@@ -29,12 +34,17 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
     initNewCamera(cameraDescription);
   }
 
-  initNewCamera(Iterator cameraIterator) {
+  initNewCamera(Iterator cameraIterator) async {
+    CameraDescription description = await getCamera(direction);
+    ImageRotation rotation = rotationIntToImageRotation(
+      description.sensorOrientation,
+    );
+
     controller = CameraController(
       cameraIterator.current,
       ResolutionPreset.medium,
     );
-    controller.initialize().then((_) {
+    await controller.initialize().then((_) {
       if (!mounted) {
         return;
       }
@@ -43,6 +53,16 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
       controller.startImageStream((CameraImage img) {
         if (!isDetecting) {
           isDetecting = true;
+
+          // detect(img, FirebaseVision.instance.faceDetector().processImage,
+          //         rotation)
+          //     .then(
+          //   (dynamic result) {
+          //     setState(() {
+          //       faces = result;
+          //     });
+          //   },
+          // );
 
           Tflite.runModelOnFrame(
             bytesList: img.planes.map((plane) {
@@ -63,7 +83,7 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
   @override
   void initState() {
     super.initState();
-
+    svgColor = Colors.black;
     isDetecting = true;
     cameraDescription = widget.cameras.iterator;
 
@@ -80,7 +100,8 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
     Tflite.close();
     try {
       String res = await Tflite.loadModel(
-          model: "assets/model/model.tflite", labels: "assets/model/model.txt");
+          model: "assets/model/masknew.tflite",
+          labels: "assets/model/model.txt");
       print('loadModel result : $res');
     } on PlatformException {
       print('Failed to load model.');
@@ -101,46 +122,75 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
 
   @override
   Widget build(BuildContext context) {
-    screen = MediaQuery.of(context).size.width;
-    if (!controller.value.isInitialized) {
-      return Container();
-    }
-    var tmp = MediaQuery.of(context).size;
-    var screenH = math.max(tmp.height, tmp.width);
-    var screenW = math.min(tmp.height, tmp.width);
-    tmp = controller.value.previewSize;
-    var previewH = math.max(tmp.height, tmp.width);
-    var previewW = math.min(tmp.height, tmp.width);
-    var screenRatio = screenH / screenW;
-    var previewRatio = previewH / previewW;
-
+    screen = MediaQuery.of(context).size;
     return Scaffold(
-      body: Stack(
-        children: [
-          OverflowBox(
-            maxHeight: screenRatio > previewRatio
-                ? screenH
-                : screenW / previewW * previewH,
-            maxWidth: screenRatio > previewRatio
-                ? screenH / previewH * previewW
-                : screenW,
-            child: CameraPreview(controller),
-          ),
-          Container(
-            child: SvgPicture.asset(
-              'assets/image/test2.svg',
-              color: Colors.red,
-            ),
-          ),
-          Stack(
-            children: result != null ? _renderStrings() : [],
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => switchCamera(cameraDescription),
-        child: Icon(Icons.flip_camera_android),
-      ),
+      body: controller != null
+          ? Stack(
+              children: [
+                OverflowBox(
+                  // minHeight: screen.height,
+                  minWidth: screen.width,
+                  child: CameraPreview(controller),
+                ),
+                Container(
+                    height: screen.height,
+                    width: screen.width,
+                    child: svgPicture('assets/image/test2.svg')),
+                Text(result != null
+                    ? result.map((e) => '${e["index"]}').first
+                    : ''),
+                Stack(
+                  children: result != null ? _renderStrings() : [],
+                ),
+                Container(
+                  alignment: Alignment.bottomCenter,
+                  child: ClipOval(
+                    child: Material(
+                      color: Style().darkColor,
+                      child: InkWell(
+                        splashColor: Style().lighColor,
+                        child: SizedBox(
+                          height: screen.height * 0.1,
+                          width: screen.height * 0.1,
+                          child: Icon(Icons.switch_camera_outlined),
+                        ),
+                        onTap: () => switchCamera(cameraDescription),
+                      ),
+                    ),
+                  ),
+                )
+              ],
+            )
+          : CircularProgressIndicator(),
+    );
+  }
+
+  SvgPicture svgPicture(String assets) {
+    return buildSvgPicture(
+        result != null ? result.map((e) => '${e["index"]}').first : '', assets);
+  }
+
+  Widget buildCameraPreview() {
+    if (controller != null) {
+      return CameraPreview(controller);
+    } else {
+      return Text('');
+    }
+  }
+
+  SvgPicture buildSvgPicture(String result, String assets) {
+    if (result.isNotEmpty) {
+      if (result == '0') {
+        svgColor = Colors.green;
+      } else if (result == '1') {
+        svgColor = Colors.black;
+      } else {
+        svgColor = Colors.red;
+      }
+    }
+    return SvgPicture.asset(
+      assets,
+      color: svgColor,
     );
   }
 
