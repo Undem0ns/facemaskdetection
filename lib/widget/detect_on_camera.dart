@@ -42,7 +42,8 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
 
     controller = CameraController(
       cameraIterator.current,
-      ResolutionPreset.medium,
+      ResolutionPreset.low,
+      enableAudio: false,
     );
     await controller.initialize().then((_) {
       if (!mounted) {
@@ -51,6 +52,17 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
       setState(() {});
 
       controller.startImageStream((CameraImage img) {
+        // print('image format raw ${img.format.raw}');
+        // print('image format group ${img.format.group}');
+        // print('image format group index ${img.format.group.index}');
+        // print('image height ${img.height}');
+        // print('image width ${img.width}');
+        // print('image planes bytes ${img.planes.first.bytes}');
+        // print('image planes bytesPerPixel ${img.planes.first.bytesPerPixel}');
+        // print('image planes bytesPerRow ${img.planes.first.bytesPerRow}');
+        // print('image planes height ${img.planes.first.height}');
+        // print('image planes width ${img.planes.first.width}');
+
         if (!isDetecting) {
           isDetecting = true;
 
@@ -70,7 +82,10 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
             }).toList(),
             imageHeight: img.height,
             imageWidth: img.width,
-            numResults: 2,
+            numResults: 3,
+            imageMean: 0,
+            imageStd: 255,
+            // threshold: 0.2,
           ).then((recognitions) {
             setRecognitions(recognitions);
             isDetecting = false;

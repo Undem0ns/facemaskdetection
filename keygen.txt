@@ -1,0 +1,4 @@
+keytool -genkey -v -keystore E:\facemaskdetection\android\key\key.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias key
+
+
+E:\facemaskdetection\android\key

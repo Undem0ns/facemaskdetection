@@ -155,8 +155,12 @@ class _DetectImageState extends State<DetectImage> {
               // isImagePorcessing = true;
               print(isImagePorcessing);
             });
-            Tflite.runModelOnImage(path: imageFile.path)
-                .then((recognitions) => setRecognitions(recognitions));
+            Tflite.runModelOnImage(
+              path: imageFile.path,
+              numResults: 3,
+              imageMean: 0,
+              imageStd: 1,
+            ).then((recognitions) => setRecognitions(recognitions));
             // final firebaseImage =
             //     FirebaseVisionImage.fromFilePath(imageFile.path);
             // final faceDetector = FirebaseVision.instance.faceDetector();
