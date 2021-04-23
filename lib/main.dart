@@ -11,7 +11,6 @@ Future<void> main() async {
   } on CameraException catch (e) {
     print('Error: $e.code\nError Message: $e.message');
   }
-  // cameras = await availableCameras();
   runApp(MyApp());
 }
 
@@ -24,8 +23,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       routes: routes,
-      // initialRoute: '/homepage',
-      home: HomePage(cameras),
+      home: HomePage(cameras), debugShowCheckedModeBanner: false,
     );
   }
 }

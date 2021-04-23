@@ -1,5 +1,4 @@
 import 'package:camera/camera.dart';
-import 'package:facemaskdetection/main.dart';
 import 'package:facemaskdetection/utility/style.dart';
 import 'package:facemaskdetection/widget/detect_image.dart';
 import 'package:facemaskdetection/widget/detect_on_camera.dart';

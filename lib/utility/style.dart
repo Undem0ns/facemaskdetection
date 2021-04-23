@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:ui' as ui;
-import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart';
 
 class Style {
@@ -30,38 +28,44 @@ class Style {
         ),
       );
 
-  Widget showImage(double width, double height, File file) => Container(
-        width: width,
+  Widget showImage(
+    double screenWidth,
+    double height,
+    File file,
+    int imageWidth,
+  ) =>
+      Container(
+        width: screenWidth,
         height: height,
         decoration: BoxDecoration(
           image: DecorationImage(
             image: FileImage(file),
-            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            // fit: BoxFit.fill,
           ),
         ),
       );
-
-  // Widget showImageCrop(double width, double height, File file, Rect rect) {
-  //   // cropImage = img.copyCrop(imgImage, x, y, w, h)
-  //   return Container(
-  //     child: Column(
-  //       children: [],
-  //     ),
-  //     width: width,
-  //     height: height,
-  //     decoration: BoxDecoration(
-  //       image: DecorationImage(
-  //         image: FileImage(file),
-  //         fit: BoxFit.cover,
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget titleH1(String string) => Text(
         string,
         style: TextStyle(
           color: Colors.black,
+          fontSize: 30,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+  Widget titleH1Red(String string) => Text(
+        string,
+        style: TextStyle(
+          color: Colors.red,
+          fontSize: 30,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+  Widget titleH1Green(String string) => Text(
+        string,
+        style: TextStyle(
+          color: Colors.green,
           fontSize: 30,
           fontWeight: FontWeight.bold,
         ),

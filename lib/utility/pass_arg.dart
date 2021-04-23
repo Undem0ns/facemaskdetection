@@ -1,7 +1,7 @@
-import 'package:camera/camera.dart';
+// import 'package:camera/camera.dart';
 
-class PassArguments {
-  final List<CameraDescription> cameras;
+// class PassArguments {
+//   final List<CameraDescription> cameras;
 
-  PassArguments(this.cameras);
-}
+//   PassArguments(this.cameras);
+// }

@@ -64,9 +64,9 @@ ImageRotation rotationIntToImageRotation(int rotation) {
   }
 }
 
-Float32List imageToByteListFloat32(
+Uint8List imageToByteListFloat32(
     imglib.Image image, int inputSize, double mean, double std) {
-  var convertedBytes = Float32List(1 * inputSize * inputSize * 3);
+  var convertedBytes = Float32List(1 * inputSize * inputSize * 3 * 1);
   var buffer = Float32List.view(convertedBytes.buffer);
   int pixelIndex = 0;
   for (var i = 0; i < inputSize; i++) {
@@ -77,7 +77,25 @@ Float32List imageToByteListFloat32(
       buffer[pixelIndex++] = (imglib.getBlue(pixel) - mean) / std;
     }
   }
-  return convertedBytes.buffer.asFloat32List();
+  return convertedBytes.buffer.asUint8List();
+}
+
+Uint8List imageToByteListUint8(imglib.Image image, int inputSize) {
+  var convertedBytes = Uint8List(1 * inputSize * inputSize * 3 * 1);
+  var buffer = Uint8List.view(convertedBytes.buffer);
+  int pixelIndex = 0;
+  for (var i = 0; i < inputSize; i++) {
+    for (var j = 0; j < inputSize; j++) {
+      if (i / 10 == 0) {
+        print('(j, i) = ($j,$i)');
+      }
+      var pixel = image.getPixel(j, i);
+      buffer[pixelIndex++] = imglib.getRed(pixel);
+      buffer[pixelIndex++] = imglib.getGreen(pixel);
+      buffer[pixelIndex++] = imglib.getBlue(pixel);
+    }
+  }
+  return convertedBytes.buffer.asUint8List();
 }
 
 double euclideanDistance(List e1, List e2) {

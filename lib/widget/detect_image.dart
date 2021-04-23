@@ -1,11 +1,10 @@
 import 'dart:io';
 
 import 'package:facemaskdetection/utility/style.dart';
-import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:image/image.dart' as img;
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tflite/tflite.dart';
 
 class DetectImage extends StatefulWidget {
@@ -15,21 +14,35 @@ class DetectImage extends StatefulWidget {
 
 class _DetectImageState extends State<DetectImage> {
   final ImagePicker imagepicker = ImagePicker();
-
   File imageFile;
   double screenHeight;
   double screenWidth;
-  bool isImagePorcessing;
+  bool loadModelError;
   bool showImage;
-  List<Face> faces;
-  img.Image image;
+  int imageW;
   List<dynamic> result;
 
   @override
   void initState() {
     super.initState();
-    isImagePorcessing = false;
+    loadModelError = false;
     showImage = false;
+    loadModel();
+  }
+
+  Future loadModel() async {
+    Tflite.close();
+    try {
+      String res = await Tflite.loadModel(
+          model: "assets/model/masknew.tflite",
+          labels: "assets/model/model.txt");
+      print('loadModel $res');
+    } on PlatformException {
+      print('Failed to load model.');
+      setState(() {
+        loadModelError = true;
+      });
+    }
   }
 
   @override
@@ -38,15 +51,16 @@ class _DetectImageState extends State<DetectImage> {
     screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       floatingActionButton:
-          isImagePorcessing ? Text('') : buildFloatingActionButton(),
-      body: isImagePorcessing
+          loadModelError ? Text('') : buildFloatingActionButton(),
+      body: loadModelError
           ? Container(
               decoration: Style().decoration(),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Style().titleH1('Processing....'),
+                    Style().titleH1('Model can not load'),
+                    Style().titleH1('Please restart application'),
                     SizedBox(
                       height: 20,
                     ),
@@ -67,6 +81,7 @@ class _DetectImageState extends State<DetectImage> {
                           screenWidth,
                           screenHeight * 0.5,
                           imageFile,
+                          imageW,
                         ),
                         SizedBox(
                           height: screenHeight * 0.05,
@@ -94,45 +109,85 @@ class _DetectImageState extends State<DetectImage> {
   }
 
   Column buildResult() {
-    if (result.first["index"] == 0) {
-      return Column(
-        children: [
-          Icon(
-            Icons.do_disturb_on_rounded,
-            size: screenHeight * 0.2,
-            color: Colors.red,
-          ),
-          Text(result.first["index"].toString()),
-          Text(result.first["label"].toString()),
-          Style().titleH1("Not waring mask"),
-        ],
-      );
-    } else if ((result.first["index"] == 1)) {
-      return Column(
-        children: [
-          Icon(
-            Icons.high_quality,
-            size: screenHeight * 0.2,
-            color: Colors.yellow,
-          ),
-          Text(result.first["index"].toString()),
-          Text(result.first["label"].toString()),
-          Style().titleH1("No face detected"),
-        ],
-      );
+    if (result != null) {
+      // if (result.first["index"] == 2) {
+      //   return Column(
+      //     children: [
+      //       Icon(
+      //         Icons.do_disturb_on_rounded,
+      //         size: screenHeight * 0.2,
+      //         color: Colors.red,
+      //       ),
+      //       Style().titleH1("Not wearing mask"),
+      //       Style().titleH1(
+      //           '${(result.first["confidence"] * 100).toStringAsFixed(0)}%'),
+      //     ],
+      //   );
+      // } else if ((result.first["index"] == 1)) {
+      //   return Column(
+      //     children: [
+      //       Icon(
+      //         Icons.info,
+      //         size: screenHeight * 0.2,
+      //         color: Colors.yellow,
+      //       ),
+      //       Style().titleH1("No face found"),
+      //     ],
+      //   );
+      // } else {
+      //   return Column(
+      //     children: [
+      //       Icon(
+      //         Icons.assignment_turned_in_rounded,
+      //         size: screenHeight * 0.2,
+      //         color: Colors.greenAccent[400],
+      //       ),
+      //       Style().titleH1("Wearing face mask"),
+      //       Style().titleH1(
+      //           '${(result.first["confidence"] * 100).toStringAsFixed(0)}%'),
+      //     ],
+      //   );
+      // }
+      if (result.first["index"] == 2) {
+        return Column(
+          children: [
+            Icon(
+              Icons.do_disturb_on_rounded,
+              size: screenHeight * 0.2,
+              color: Colors.red,
+            ),
+            Style().titleH1("Not wearing mask"),
+            Style().titleH1(
+                '${(result.first["confidence"] * 100).toStringAsFixed(0)}%'),
+          ],
+        );
+      } else if ((result.first["index"] == 1)) {
+        return Column(
+          children: [
+            Icon(
+              Icons.info,
+              size: screenHeight * 0.2,
+              color: Colors.yellow,
+            ),
+            Style().titleH1("No face found"),
+          ],
+        );
+      } else {
+        return Column(
+          children: [
+            Icon(
+              Icons.assignment_turned_in_rounded,
+              size: screenHeight * 0.2,
+              color: Colors.greenAccent[400],
+            ),
+            Style().titleH1("Wearing face mask"),
+            Style().titleH1(
+                '${(result.first["confidence"] * 100).toStringAsFixed(0)}%'),
+          ],
+        );
+      }
     } else {
-      return Column(
-        children: [
-          Icon(
-            Icons.assignment_turned_in_rounded,
-            size: screenHeight * 0.2,
-            color: Colors.greenAccent[400],
-          ),
-          Text(result.first["index"].toString()),
-          Text(result.first["label"].toString()),
-          Style().titleH1("Waring face mask"),
-        ],
-      );
+      return Column();
     }
   }
 
@@ -145,37 +200,31 @@ class _DetectImageState extends State<DetectImage> {
           Icons.image_search,
           size: screenWidth * 0.1,
         ),
-        onPressed: () async {
-          final pickedFile =
-              await imagepicker.getImage(source: ImageSource.gallery);
-          if (pickedFile != null) {
-            setState(() {
-              imageFile = File(pickedFile.path);
-              showImage = true;
-              // isImagePorcessing = true;
-              print(isImagePorcessing);
-            });
-            Tflite.runModelOnImage(
-              path: imageFile.path,
-              numResults: 3,
-              imageMean: 0,
-              imageStd: 1,
-            ).then((recognitions) => setRecognitions(recognitions));
-            // final firebaseImage =
-            //     FirebaseVisionImage.fromFilePath(imageFile.path);
-            // final faceDetector = FirebaseVision.instance.faceDetector();
-            // faces = await faceDetector.processImage(firebaseImage);
-            // setState(() {
-            //   isImagePorcessing = false;
-            //   showImage = true;
-            //   print(isImagePorcessing);
-            //   print(faces.first);
-            // });
-          }
-        },
+        onPressed: pickImage,
         backgroundColor: Style().lighColor,
       ),
     );
+  }
+
+  void pickImage() async {
+    final pickedFile = await imagepicker.getImage(
+      source: ImageSource.gallery,
+      maxHeight: screenHeight / 2,
+      maxWidth: screenWidth,
+      imageQuality: 50,
+    );
+    if (pickedFile != null) {
+      setState(() {
+        imageFile = File(pickedFile.path);
+        showImage = true;
+      });
+      Tflite.runModelOnImage(
+        path: imageFile.path,
+        numResults: 3,
+        imageMean: 127.5,
+        imageStd: 127.5,
+      ).then((recognitions) => setRecognitions(recognitions));
+    }
   }
 
   setRecognitions(recognitions) {
