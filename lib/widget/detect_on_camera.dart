@@ -8,7 +8,6 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tflite/tflite.dart';
 
-import 'package:facemaskdetection/service/utils.dart';
 import 'package:facemaskdetection/utility/style.dart';
 
 class DetectOnCamera extends StatefulWidget {
@@ -272,7 +271,7 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
                 Container(
                     height: screen.height,
                     width: screen.width,
-                    child: svgPicture('assets/image/test2.svg')),
+                    child: svgPicture('assets/image/rectangle.svg')),
                 buildTextPreview(),
                 buildTextConfident(),
                 // buildButton(
