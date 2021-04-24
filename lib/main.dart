@@ -1,7 +1,8 @@
-import 'package:camera/camera.dart';
-import 'package:facemaskdetection/route.dart';
-import 'package:facemaskdetection/widget/home_page.dart';
 import 'package:flutter/material.dart';
+
+import 'package:camera/camera.dart';
+import 'package:facemaskdetection/widget/home_page.dart';
+
 
 List<CameraDescription> cameras;
 Future<void> main() async {
@@ -15,14 +16,13 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-  getCamera() {
-    return cameras;
-  }
+  // getCamera() {
+  //   return cameras;
+  // }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      routes: routes,
       home: HomePage(cameras), debugShowCheckedModeBanner: false,
     );
   }
