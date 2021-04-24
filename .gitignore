@@ -30,6 +30,8 @@
 .pub-cache/
 .pub/
 /build/
+.vscode/
+*.jks
 
 # Web related
 lib/generated_plugin_registrant.dart
