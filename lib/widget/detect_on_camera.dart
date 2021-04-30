@@ -1,41 +1,55 @@
 import 'dart:async';
 
 import 'package:camera/camera.dart';
+import 'package:facemaskdetection/model/model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tflite/tflite.dart';
 
 import 'package:facemaskdetection/utility/style.dart';
 
 class DetectOnCamera extends StatefulWidget {
   final List<CameraDescription> cameras;
-  DetectOnCamera(this.cameras);
+  final Model maskModel;
+  DetectOnCamera(this.cameras, this.maskModel);
   @override
   _DetectOnCameraState createState() => _DetectOnCameraState();
 }
 
 class _DetectOnCameraState extends State<DetectOnCamera> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
-  // Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+  final GlobalKey<ScaffoldState> scaffoldKey = new GlobalKey<ScaffoldState>();
+
   CameraController controller;
   bool isDetecting = false;
   List<dynamic> result;
-  Size screen;
+  Size screenSize;
   Color svgColor;
   Iterator<CameraDescription> cameraDescription;
   CameraLensDirection direction = CameraLensDirection.back;
-  FlutterTts flutterTts;
-  int maskState;
+  FlutterTts textToSpeech;
+  int currentResult;
   int selectedIndex = 0;
-  bool enableVoiceEN;
-  bool enableVoiceTH;
-  bool showConfidence;
-  bool showResultText;
+  bool enableVoiceEN = true;
+  bool enableVoiceTH = true;
+  bool showConfidence = true;
+  bool showResultText = true;
+
+  @override
+  void initState() {
+    super.initState();
+    currentResult = 1;
+    svgColor = Colors.black;
+    textToSpeech = FlutterTts();
+    initSwitchListTile();
+    cameraDescription = widget.cameras.iterator;
+    cameraDescription.moveNext();
+    initNewCamera(cameraDescription);
+  }
 
   switchCamera(Iterator cameraIterator) {
+    // if .moveNext() return false mean cameraDescription is the last element.
+    // set new cameraDescription and call .moveNext() to start over.
     if (!cameraIterator.moveNext()) {
       cameraDescription = widget.cameras.iterator;
       cameraDescription.moveNext();
@@ -50,22 +64,12 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
       enableAudio: false,
     );
     await controller.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
       setState(() {});
-
-      controller.startImageStream((CameraImage img) {
+      controller.startImageStream((CameraImage cameraImage) {
+        // Detect on camera image and wait to set recognition. Then detect again.
         if (!isDetecting) {
           isDetecting = true;
-          Tflite.runModelOnFrame(
-            bytesList: img.planes.map((plane) {
-              return plane.bytes;
-            }).toList(),
-            imageHeight: img.height,
-            imageWidth: img.width,
-            numResults: 3,
-          ).then((recognitions) {
+          widget.maskModel.predictOnCamera(cameraImage).then((recognitions) {
             setRecognitions(recognitions);
             isDetecting = false;
           });
@@ -74,52 +78,19 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    maskState = 1;
-    svgColor = Colors.black;
-    isDetecting = true;
-    cameraDescription = widget.cameras.iterator;
-    flutterTts = FlutterTts();
-    getSwitchListTile('enableVoiceEN').then((value) => enableVoiceEN = value);
-    getSwitchListTile('enableVoiceTH').then((value) => enableVoiceTH = value);
-    getSwitchListTile('showConfidence').then((value) => showConfidence = value);
-    getSwitchListTile('showResultText').then((value) => showResultText = value);
-    loadModel().then((val) {
-      setState(() {
-        isDetecting = false;
-      });
-    });
-    cameraDescription.moveNext();
-    initNewCamera(cameraDescription);
-  }
-
-  Future loadModel() async {
-    Tflite.close();
-    try {
-      String res = await Tflite.loadModel(
-          model: "assets/model/masknew.tflite",
-          labels: "assets/model/model.txt");
-      print('loadModel $res');
-    } on PlatformException {
-      print('Failed to load model.');
-    }
-  }
-
-  Future _speak() async {
+  Future speakEnglish() async {
     if (enableVoiceEN) {
-      flutterTts.setLanguage('en');
-      await flutterTts.awaitSpeakCompletion(true);
-      await flutterTts.speak('Please wear a face mask.');
+      textToSpeech.setLanguage('en');
+      await textToSpeech.awaitSpeakCompletion(true);
+      await textToSpeech.speak('Please wear a face mask.');
     }
   }
 
   Future speakThai() async {
     if (enableVoiceTH) {
-      flutterTts.setLanguage('th');
-      await flutterTts.awaitSpeakCompletion(true);
-      await flutterTts.speak('กรุณาสวมหน้ากากอนามัย');
+      textToSpeech.setLanguage('th');
+      await textToSpeech.awaitSpeakCompletion(true);
+      await textToSpeech.speak('กรุณาสวมหน้ากากอนามัย');
     }
   }
 
@@ -128,7 +99,7 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
       setState(() {
         result = recognitions;
         if (result.first["index"] == 2) {
-          if (result.first["index"] != maskState) {
+          if (result.first["index"] != currentResult) {
             changeToNoMask();
           }
         } else {
@@ -140,155 +111,132 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
 
   @override
   void dispose() {
-    controller?.dispose();
     super.dispose();
-    flutterTts.stop();
+    textToSpeech.stop();
+    controller?.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    screen = MediaQuery.of(context).size;
+    screenSize = MediaQuery.of(context).size;
     return Scaffold(
-      key: _scaffoldKey,
+      key: scaffoldKey,
       floatingActionButton: buildFloatingActionButton(
-        () => switchCamera(cameraDescription),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        notchMargin: 10,
-        shape: CircularNotchedRectangle(),
-        child: BottomNavigationBar(
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: "Home",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: "Setting",
-            ),
-          ],
-          currentIndex: selectedIndex,
-          selectedItemColor: Style().primaryColor,
-          unselectedItemColor: Colors.black,
-          onTap: itenOnTap,
-        ),
-      ),
+          onTab: () => switchCamera(cameraDescription)),
+      bottomNavigationBar: buildBottomAppBar(),
       floatingActionButtonLocation:
           FloatingActionButtonLocation.miniCenterDocked,
-      endDrawer: Drawer(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SafeArea(child: Container()),
-              Card(
-                  child: Center(
-                child: Style().titleH1('Setting'),
-              )),
-              Card(
-                  child: SwitchListTile(
-                value: showResultText,
+      endDrawer: buildDrawer(),
+      body: Stack(
+        children: [
+          Container(
+            decoration: Style().decoration(),
+          ),
+          OverflowBox(
+            minWidth: screenSize.width,
+            child: CameraPreview(controller),
+          ),
+          Container(
+              height: screenSize.height,
+              width: screenSize.width,
+              child: svgPicture('assets/image/rectangle.svg')),
+          buildTextPreview(),
+          buildTextConfident(),
+        ],
+      ),
+    );
+  }
+
+  BottomAppBar buildBottomAppBar() {
+    return BottomAppBar(
+      notchMargin: 10,
+      shape: CircularNotchedRectangle(),
+      child: BottomNavigationBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: "Home",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: "Setting",
+          ),
+        ],
+        currentIndex: selectedIndex,
+        selectedItemColor: Style().primaryColor,
+        unselectedItemColor: Colors.black,
+        onTap: bottomAppBarOnTap,
+      ),
+    );
+  }
+
+  Drawer buildDrawer() {
+    return Drawer(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SafeArea(child: Container()),
+            Card(
+                child: Center(
+              child: Style().titleH1('Setting'),
+            )),
+            Card(
+                child: SwitchListTile(
+              value: showResultText,
+              onChanged: (bool value) {
+                setSwitchListTile('showResultText', value);
+                setState(() {
+                  showResultText = value;
+                });
+              },
+              title: Style().titleH3('Show result text'),
+              secondary: Icon(Icons.format_color_text),
+            )),
+            Card(
+              child: SwitchListTile(
+                value: enableVoiceEN,
                 onChanged: (bool value) {
-                  changeSwitchListTile('showResultText', value);
+                  setSwitchListTile('enableVoiceEN', value);
                   setState(() {
-                    showResultText = value;
+                    enableVoiceEN = value;
                   });
                 },
-                title: Style().titleH3('Show result text'),
-                secondary: Icon(Icons.format_color_text),
-              )),
-              Card(
-                child: SwitchListTile(
-                  value: enableVoiceEN,
-                  onChanged: (bool value) {
-                    changeSwitchListTile('enableVoiceEN', value);
-                    setState(() {
-                      enableVoiceEN = value;
-                    });
-                  },
-                  title: Style().titleH3('Enable voice EN'),
-                  secondary: Icon(Icons.record_voice_over_outlined),
-                ),
+                title: Style().titleH3('Enable voice EN'),
+                secondary: Icon(Icons.record_voice_over_outlined),
               ),
-              Card(
-                child: SwitchListTile(
-                  value: enableVoiceTH,
-                  onChanged: (bool value) {
-                    changeSwitchListTile('enableVoiceTH', value);
-                    setState(() {
-                      enableVoiceTH = value;
-                    });
-                  },
-                  title: Style().titleH3('Enable voice TH'),
-                  secondary: Icon(Icons.record_voice_over),
-                ),
+            ),
+            Card(
+              child: SwitchListTile(
+                value: enableVoiceTH,
+                onChanged: (bool value) {
+                  setSwitchListTile('enableVoiceTH', value);
+                  setState(() {
+                    enableVoiceTH = value;
+                  });
+                },
+                title: Style().titleH3('Enable voice TH'),
+                secondary: Icon(Icons.record_voice_over),
               ),
-              Card(
-                child: SwitchListTile(
-                  value: showConfidence,
-                  onChanged: (bool value) {
-                    changeSwitchListTile('showConfidence', value);
-                    setState(() {
-                      showConfidence = value;
-                    });
-                  },
-                  title: Style().titleH3('Show confidence'),
-                  secondary: Icon(Icons.person_search_outlined),
-                ),
+            ),
+            Card(
+              child: SwitchListTile(
+                value: showConfidence,
+                onChanged: (bool value) {
+                  setSwitchListTile('showConfidence', value);
+                  setState(() {
+                    showConfidence = value;
+                  });
+                },
+                title: Style().titleH3('Show confidence'),
+                secondary: Icon(Icons.person_search_outlined),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        // child: Container(
-        //   decoration: Style().decoration(),
-        //   child: Column(
-        //     children: [
-        //       Container(
-        //         child: SafeArea(child: Style().titleH1('Settings')),
-        //         height: screen.height * 0.1,
-        //       ),
-        //       Text('data'),
-        //       Text('data'),
-        //       Text('data'),
-        //       Text('data'),
-        //     ],
-        //   ),
-        // ),
       ),
-      body: controller != null
-          ? Stack(
-              children: [
-                Container(
-                  decoration: Style().decoration(),
-                ),
-                OverflowBox(
-                  // minHeight: screen.height,
-                  minWidth: screen.width,
-                  child: CameraPreview(controller),
-                ),
-                Container(
-                    height: screen.height,
-                    width: screen.width,
-                    child: svgPicture('assets/image/rectangle.svg')),
-                buildTextPreview(),
-                buildTextConfident(),
-                // buildButton(
-                //   Alignment.bottomRight,
-                //   Style().darkColor,
-                //   Style().lighColor,
-                //   Icons.switch_camera_outlined,
-                //   () => switchCamera(cameraDescription),
-                // ),
-
-                // ElevatedButton(
-                //   onPressed: () => _speak(),
-                //   child: Icon(Icons.adb_sharp),
-                // ),
-              ],
-            )
-          : CircularProgressIndicator(),
     );
   }
 
@@ -307,11 +255,11 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
           child: InkWell(
             splashColor: splashColor,
             child: SizedBox(
-              height: screen.height * 0.1,
-              width: screen.height * 0.1,
+              height: screenSize.height * 0.1,
+              width: screenSize.height * 0.1,
               child: Icon(
                 icon,
-                size: screen.width * 0.1,
+                size: screenSize.width * 0.1,
               ),
             ),
             onTap: () => onTab(),
@@ -321,16 +269,14 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
     );
   }
 
-  SizedBox buildFloatingActionButton(
-    Function onTab,
-  ) {
+  SizedBox buildFloatingActionButton({@required Function onTab}) {
     return SizedBox(
-      width: screen.width * 0.15,
-      height: screen.width * 0.15,
+      width: screenSize.width * 0.15,
+      height: screenSize.width * 0.15,
       child: FloatingActionButton(
         child: Icon(
           Icons.switch_camera_outlined,
-          size: screen.width * 0.1,
+          size: screenSize.width * 0.1,
         ),
         onPressed: onTab,
         backgroundColor: Style().lighColor,
@@ -359,9 +305,9 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
   Widget buildTextResult(String text) {
     return Positioned.fromRect(
       rect: Rect.fromCenter(
-        center: Offset(screen.width / 2, screen.width / 2),
-        width: screen.width * 0.6,
-        height: screen.width * 0.6,
+        center: Offset(screenSize.width / 2, screenSize.width / 2),
+        width: screenSize.width * 0.6,
+        height: screenSize.width * 0.6,
       ),
       child: Text(
         text,
@@ -401,14 +347,6 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
         result != null ? result.map((e) => '${e["index"]}').first : '', assets);
   }
 
-  Widget buildCameraPreview() {
-    if (controller != null) {
-      return CameraPreview(controller);
-    } else {
-      return Text('');
-    }
-  }
-
   SvgPicture buildSvgPicture(String result, String assets) {
     if (result.isNotEmpty) {
       if (result == '0') {
@@ -427,44 +365,32 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
 
   changeToNoMask() async {
     setState(() {
-      maskState = 2;
-      _speak().then((value) => speakThai());
+      currentResult = 2;
+      speakEnglish().then((_) => speakThai());
     });
   }
 
   changeToMask() {
     setState(() {
-      maskState = 3;
+      currentResult = 3;
     });
   }
 
-  void itenOnTap(int value) {
-    // Scaffold.of(context).openDrawer();
+  void bottomAppBarOnTap(int value) {
+    // value == 1 => back to home.
+    // value == 2 => open end drawer.
     setState(() {
       selectedIndex = value;
     });
     if (value == 0) {
       Navigator.of(context).pop();
     } else {
-      _scaffoldKey.currentState.openEndDrawer();
+      scaffoldKey.currentState.openEndDrawer();
     }
   }
 
-  // saveValue(String key, String value) async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   prefs.setString(key, value);
-  // }
-
-  // getValue(String key) async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   //Return String
-  //   String stringValue = prefs.getString(key);
-  //   return stringValue;
-  // }
-  //
-  changeSwitchListTile(String key, bool value) async {
+  setSwitchListTile(String key, bool value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    // bool value = (prefs.getBool(key) ?? false);
     print('value is : $value');
     await prefs.setBool(key, value);
     print('getBool : ${prefs.getBool(key)}');
@@ -475,5 +401,12 @@ class _DetectOnCameraState extends State<DetectOnCamera> {
     bool value = (prefs.getBool(key) ?? false);
     print('value is : $value');
     return value;
+  }
+
+  void initSwitchListTile() {
+    getSwitchListTile('enableVoiceEN').then((value) => enableVoiceEN = value);
+    getSwitchListTile('enableVoiceTH').then((value) => enableVoiceTH = value);
+    getSwitchListTile('showConfidence').then((value) => showConfidence = value);
+    getSwitchListTile('showResultText').then((value) => showResultText = value);
   }
 }
