@@ -32,7 +32,6 @@ class Style {
     double screenWidth,
     double height,
     File file,
-    int imageWidth,
   ) =>
       Container(
         width: screenWidth,

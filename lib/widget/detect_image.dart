@@ -1,193 +1,123 @@
 import 'dart:io';
 
+import 'package:facemaskdetection/model/model.dart';
 import 'package:facemaskdetection/utility/style.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:tflite/tflite.dart';
 
 class DetectImage extends StatefulWidget {
+  final Model maskModel;
+
+  const DetectImage(this.maskModel);
   @override
   _DetectImageState createState() => _DetectImageState();
 }
 
 class _DetectImageState extends State<DetectImage> {
+  List<Widget> faceMaskResult = [];
   final ImagePicker imagepicker = ImagePicker();
   File imageFile;
   double screenHeight;
   double screenWidth;
-  bool loadModelError;
-  bool showImage;
-  int imageW;
+  bool imagePicked = false;
   List<dynamic> result;
 
   @override
   void initState() {
     super.initState();
-    loadModelError = false;
-    showImage = false;
-    loadModel();
-  }
-
-  Future loadModel() async {
-    Tflite.close();
-    try {
-      String res = await Tflite.loadModel(
-          model: "assets/model/masknew.tflite",
-          labels: "assets/model/model.txt");
-      print('loadModel $res');
-    } on PlatformException {
-      print('Failed to load model.');
-      setState(() {
-        loadModelError = true;
-      });
-    }
+    createFaceMaskResult();
   }
 
   @override
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width;
     screenHeight = MediaQuery.of(context).size.height;
+    if (widget.maskModel.canLoadModel) {
+      return buildModelCanLoadScaffold();
+    } else {
+      return buildModelCanNotLoadScaffold();
+    }
+  }
+
+  Scaffold buildModelCanLoadScaffold() {
     return Scaffold(
-      floatingActionButton:
-          loadModelError ? Text('') : buildFloatingActionButton(),
-      body: loadModelError
-          ? Container(
-              decoration: Style().decoration(),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Style().titleH1('Model can not load'),
-                    Style().titleH1('Please restart application'),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    CircularProgressIndicator(
-                      backgroundColor: Colors.black,
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : showImage
-              ? Container(
-                  decoration: Style().decoration(),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Style().showImage(
-                          screenWidth,
-                          screenHeight * 0.5,
-                          imageFile,
-                          imageW,
-                        ),
-                        SizedBox(
-                          height: screenHeight * 0.05,
-                        ),
-                        Container(child: Style().titleH1("Face Mask Result")),
-                        buildResult(),
-                      ],
-                    ),
-                  ),
-                )
-              : Container(
-                  decoration: Style().decoration(),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Style().titleH1('Tap To'),
-                        Style().titleH1('Select Image'),
-                        Style().titleH1('Below'),
-                      ],
-                    ),
-                  ),
-                ),
+      floatingActionButton: buildFloatingActionButton(),
+      body: imagePicked ? buildImagePicked() : buildImageNotPick(),
     );
   }
 
-  Column buildResult() {
-    if (result != null) {
-      // if (result.first["index"] == 2) {
-      //   return Column(
-      //     children: [
-      //       Icon(
-      //         Icons.do_disturb_on_rounded,
-      //         size: screenHeight * 0.2,
-      //         color: Colors.red,
-      //       ),
-      //       Style().titleH1("Not wearing mask"),
-      //       Style().titleH1(
-      //           '${(result.first["confidence"] * 100).toStringAsFixed(0)}%'),
-      //     ],
-      //   );
-      // } else if ((result.first["index"] == 1)) {
-      //   return Column(
-      //     children: [
-      //       Icon(
-      //         Icons.info,
-      //         size: screenHeight * 0.2,
-      //         color: Colors.yellow,
-      //       ),
-      //       Style().titleH1("No face found"),
-      //     ],
-      //   );
-      // } else {
-      //   return Column(
-      //     children: [
-      //       Icon(
-      //         Icons.assignment_turned_in_rounded,
-      //         size: screenHeight * 0.2,
-      //         color: Colors.greenAccent[400],
-      //       ),
-      //       Style().titleH1("Wearing face mask"),
-      //       Style().titleH1(
-      //           '${(result.first["confidence"] * 100).toStringAsFixed(0)}%'),
-      //     ],
-      //   );
-      // }
-      if (result.first["index"] == 2) {
-        return Column(
+  Scaffold buildModelCanNotLoadScaffold() {
+    return Scaffold(
+      body: Container(
+        decoration: Style().decoration(),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Style().titleH1('Model can not load'),
+              Style().titleH1('Please restart application'),
+              CircularProgressIndicator(
+                backgroundColor: Colors.black,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildImagePicked() {
+    return SingleChildScrollView(
+      child: Container(
+        height: screenHeight,
+        width: screenWidth,
+        decoration: Style().decoration(),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // show selected image.
+              showImage(),
+              // show result icon&text.
+              faceMaskResult[result.first["index"]],
+              // show confidence.
+              Style().titleH2(
+                  'Confidence : ${(result.first["confidence"] * 100).toStringAsFixed(2)}%'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Container showImage() {
+    return Container(
+      width: screenWidth,
+      height: screenHeight * 0.5,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: FileImage(imageFile),
+          alignment: Alignment.center,
+        ),
+      ),
+    );
+  }
+
+  Widget buildImageNotPick() {
+    return Container(
+      decoration: Style().decoration(),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.do_disturb_on_rounded,
-              size: screenHeight * 0.2,
-              color: Colors.red,
-            ),
-            Style().titleH1("Not wearing mask"),
-            Style().titleH1(
-                '${(result.first["confidence"] * 100).toStringAsFixed(0)}%'),
+            Style().titleH1('Tap To'),
+            Style().titleH1('Select Image'),
+            Style().titleH1('Below'),
           ],
-        );
-      } else if ((result.first["index"] == 1)) {
-        return Column(
-          children: [
-            Icon(
-              Icons.info,
-              size: screenHeight * 0.2,
-              color: Colors.yellow,
-            ),
-            Style().titleH1("No face found"),
-          ],
-        );
-      } else {
-        return Column(
-          children: [
-            Icon(
-              Icons.assignment_turned_in_rounded,
-              size: screenHeight * 0.2,
-              color: Colors.greenAccent[400],
-            ),
-            Style().titleH1("Wearing face mask"),
-            Style().titleH1(
-                '${(result.first["confidence"] * 100).toStringAsFixed(0)}%'),
-          ],
-        );
-      }
-    } else {
-      return Column();
-    }
+        ),
+      ),
+    );
   }
 
   SizedBox buildFloatingActionButton() {
@@ -210,25 +140,52 @@ class _DetectImageState extends State<DetectImage> {
       source: ImageSource.gallery,
       maxHeight: screenHeight / 2,
       maxWidth: screenWidth,
-      imageQuality: 50,
+      imageQuality: 30,
     );
     if (pickedFile != null) {
-      setState(() {
-        imageFile = File(pickedFile.path);
-        showImage = true;
+      imageFile = File(pickedFile.path);
+      imagePicked = true;
+      // Call Model() to predict Image.
+      widget.maskModel.predictOnImage(imageFile.path).then((result) {
+        setState(() {
+          this.result = result;
+        });
+        print('result ${this.result}');
       });
-      Tflite.runModelOnImage(
-        path: imageFile.path,
-        numResults: 3,
-        imageMean: 127.5,
-        imageStd: 127.5,
-      ).then((recognitions) => setRecognitions(recognitions));
     }
   }
 
-  setRecognitions(recognitions) {
+  void createFaceMaskResult() {
     setState(() {
-      result = recognitions;
+      faceMaskResult.add(buildResult(
+        Icons.assignment_turned_in_rounded,
+        Colors.greenAccent[400],
+        "Wearing face mask.",
+      ));
+      faceMaskResult.add(buildResult(
+        Icons.info,
+        Colors.yellowAccent[400],
+        "No face found.",
+      ));
+      faceMaskResult.add(buildResult(
+        Icons.do_disturb_on_rounded,
+        Colors.redAccent[400],
+        "Not wearing mask.",
+      ));
     });
+  }
+
+  Widget buildResult(
+    IconData icon,
+    Color color,
+    String text,
+  ) {
+    return Column(
+      children: [
+        Style().titleH1("Face Mask Result"),
+        Icon(icon, size: 100, color: color),
+        Style().titleH1(text),
+      ],
+    );
   }
 }
