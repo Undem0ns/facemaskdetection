@@ -1,4 +1,5 @@
 import 'package:camera/camera.dart';
+import 'package:facemaskdetection/model/model.dart';
 import 'package:facemaskdetection/utility/style.dart';
 import 'package:facemaskdetection/widget/detect_image.dart';
 import 'package:facemaskdetection/widget/detect_on_camera.dart';
@@ -13,7 +14,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  double screen;
+  Model maskModel = Model();
+  double screenWidth = 0;
   @override
   void initState() {
     super.initState();
@@ -21,7 +23,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    screen = MediaQuery.of(context).size.width;
+    screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       body: Container(
         decoration: Style().decoration(),
@@ -32,11 +34,12 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Style().titleH1('Face Mask Detector'),
                 SizedBox(height: 50),
-                Style().showLogo(screen * 0.5, screen * 0.5),
+                Style().showLogo(screenWidth * 0.5, screenWidth * 0.5),
                 SizedBox(height: 50),
-                buildBotton('Detect On Image', DetectImage()),
+                buildBotton('Detect On Image', DetectImage(maskModel)),
                 SizedBox(height: 25),
-                buildBotton('Detect On Camera', DetectOnCamera(widget.cameras)),
+                buildBotton('Detect On Camera',
+                    DetectOnCamera(widget.cameras, maskModel)),
               ],
             ),
           ),
@@ -48,7 +51,7 @@ class _HomePageState extends State<HomePage> {
   Container buildBotton(String text, var pageclass) {
     return Container(
       height: 100,
-      width: screen * 0.7,
+      width: screenWidth * 0.7,
       child: Style().button(() {
         Navigator.push(
             context, MaterialPageRoute(builder: (context) => pageclass));
